@@ -228,15 +228,15 @@ func http_raw(initid *C.UDF_INIT, args *C.UDF_ARGS, result *C.char, length *uint
 	switch method {
 	case "GET":
 		if gArg_count == 3 {
-			ret, err = httpRaw("GET", C.GoString(gArgs[1]), "", "", nil)
+			ret, err = httpRaw(method, C.GoString(gArgs[1]), "", "", nil)
 		} else {
-			ret, err = httpRaw("GET", C.GoString(gArgs[1]), "", "", gArgs[3:])
+			ret, err = httpRaw(method, C.GoString(gArgs[1]), "", "", gArgs[3:])
 		}
 	default:
 		if gArg_count == 3 {
-			ret, err = httpRaw(C.GoString(gArgs[0]), C.GoString(gArgs[1]), "", C.GoString(gArgs[2]), nil)
+			ret, err = httpRaw(method, C.GoString(gArgs[1]), "", C.GoString(gArgs[2]), nil)
 		} else {
-			ret, err = httpRaw(C.GoString(gArgs[0]), C.GoString(gArgs[1]), "", C.GoString(gArgs[2]), gArgs[3:])
+			ret, err = httpRaw(method, C.GoString(gArgs[1]), "", C.GoString(gArgs[2]), gArgs[3:])
 		}
 	}
 
