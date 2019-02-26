@@ -1,0 +1,1 @@
+go build -buildmode=c-shared -o http.so http.go
