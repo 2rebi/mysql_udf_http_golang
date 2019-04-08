@@ -10,4 +10,5 @@ some day, and you think this stuff is worth it, you can buy me a beer in return.
 
 
 [비어웨어 라이센스](http://en.wikipedia.org/wiki/Beerware)는 [Poul-Henning Kamp](http://people.freebsd.org/~phk/)에 의해 처음 작성되었습니다.
+
 [원본 번역문](https://github.com/dolsup/fontler/blob/69bbaaab76804d16abd4755b3045e606951e7148/LICENSE.md)은 [돌숲(최지원)](https://github.com/dolsup)<<1890mah@gmail.com>>으로 부터 허락을 구하고 퍼옴.
