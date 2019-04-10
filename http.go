@@ -1,17 +1,5 @@
 package main
 
-// #ifdef __linux__
-// 		#cgo CFLAGS: -I/usr/include/mariadb -fno-omit-frame-pointer
-// #elif __APPLE__
-// 		#include "TargetConditionals.h"
-// 		#if TARGET_OS_MAC
-// 			#cgo CFLAGS: -I/usr/local/include/mysql -fno-omit-frame-pointer
-// 		#else
-// 			#error "Unknown OS"
-// 		#endif
-// #else
-// 		#error "Unknown OS"
-// #endif
 // #include <stdio.h>
 // #include <sys/types.h>
 // #include <sys/stat.h>
