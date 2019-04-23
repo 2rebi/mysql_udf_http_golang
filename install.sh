@@ -1,4 +1,4 @@
-if [[ $# == 2 || $# == 1 ]]; then
+if [[ $# > 0 ]]; then
     version_info=$(mysql --version)
     if [[ "$version_info" == *"Maria"* ]]; then
         include_dir=$(mariadb_config --include)

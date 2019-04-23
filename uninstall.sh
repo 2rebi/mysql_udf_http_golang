@@ -1,4 +1,4 @@
-if [[ $# == 2 || $# == 1 ]]; then
+if [[ $# > 0 ]]; then
     mysql --user=$1 --password=$2 -s -N -e "DROP FUNCTION http_help;"
     mysql --user=$1 --password=$2 -s -N -e "DROP FUNCTION http_raw;"
     mysql --user=$1 --password=$2 -s -N -e "DROP FUNCTION http_get;"
