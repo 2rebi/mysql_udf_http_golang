@@ -34,7 +34,6 @@ type respResult struct {
 const optionDescription = `option:
 -b	Define body input type.(hex: hexdecimal output. ex/[ascii]"Hello" -> 48656c6c6f, b64: base64 encoded, txt(default): text)
 -B	Define body output type.(hex: hexdecimal output. ex/[ascii]"Hello" -> 48656c6c6f, b64: base64 encoded, txt(default): text)
--c	Define result charset when output type was txt. Default charset utf8
 -H	Pass custom headers to server (H)
 -O	Define kind of reult.(PROTO, STATUS or STATUS_CODE, HEADER, BODY(default), FULL) ex/-O PROTO|STATUS|HEADER|BODY equal -O FULL
 -s	Define tls/ssl skip verified true / false
