@@ -5,13 +5,13 @@ Call RESTful API on query.
 
 Setup 
 ---
-- Clone Source
+- **Clone Source**
 ```shell
 git clone https://github.com/RebirthLee/mysql_udf_http_golang.git udf
 cd udf
 ```
 
-- Auto Build
+- **Auto Build**
 ```shell
 bash ./install.sh {username} {password}
 ```
@@ -19,7 +19,7 @@ bash ./install.sh {username} {password}
 {username} replace your MySQL or MariaDB Username.  
 {password} replace your MySQL or MariaDB Password(Optional).
 
-- Manual Build
+- **Manual Build**
 ```shell
 bash ./build.sh
 ```
@@ -53,15 +53,15 @@ mv ./http.so /usr/local/Cellar/mariadb/10.3.12/lib/plugin/
 ```
 ### Finally, execute query
 
-- HTTP HELP
+- **Http Help**
 ```sql
 CREATE FUNCTION http_help RETURNS STRING SONAME 'http.so';
 ```
-- HTTP GET
+- **Http Get Method**
 ```sql
 CREATE FUNCTION http_get RETURNS STRING SONAME 'http.so';
 ```
-- HTTP POST
+- **Http Post Method**
 ```sql
 CREATE FUNCTION http_post RETURNS STRING SONAME 'http.so';
 ```
@@ -88,9 +88,9 @@ SELECT http_get(url, option...);
 SELECT http_get('http://example.com');
 ```
 **Return**
-```json
+```javascript
 {
-    "Body": String(HTML)
+    "Body": String(HTML(Default), Base64, Hexdecimal)
 }
 ```
 
@@ -110,7 +110,7 @@ SELECT http_get('http://example.com', '-O FULL');
     "Proto": String(Http Version, HTTP/1.0, HTTP/1.1, HTTP/2.0),
     "Status": String(Status Code, 200 OK, 404 NOT FOUND),
     "Header": JSON(`{Key : Array, ...}`),
-    "Body": String(HTML, Base64, Hexdecimal)
+    "Body": String(HTML(Default), Base64, Hexdecimal)
 }
 ```
 #
