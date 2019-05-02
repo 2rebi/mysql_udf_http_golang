@@ -1,4 +1,6 @@
 # mysql_udf_http_golang
+[![MySQL UDF](https://img.shields.io/badge/MySQL-UDF-blue.svg)](https://dev.mysql.com/) [![MariaDB UDF](https://img.shields.io/badge/MariaDB-UDF-blue.svg)](https://mariadb.com/)
+
 [MySQL](https://dev.mysql.com/) or [MariaDB](https://mariadb.com/) UDF(User-Defined Functions) HTTP Client Plugin
 
 Call RESTful API on query.
@@ -27,7 +29,7 @@ Build output is `http.so`, move file to `plugin_dir` path.
 if you don't know `plugin_dir` path.  
 Command input this on MySQL, MariaDB connection.
 
-```query
+```sql
 SHOW VARIABLES LIKE 'plugin_dir';
 ```
 
@@ -80,7 +82,7 @@ SELECT http_help();
 
 - **Prototype**
 ```sql
-SELECT http_get(url, option...);
+SELECT http_get(url, options...);
 ```   
 
 - **Simple Request**
@@ -90,14 +92,12 @@ SELECT http_get('http://example.com');
 **Return**
 ```javascript
 {
-    "Body": String(HTML(Default), Base64, Hexdecimal)
+    "Body" : String(HTML(Default), Base64, Hexdecimal)
 }
 ```
 
 - **Output Option**  
-`-O outputType`	Define kind of result.
-
-- Kinds  
+`-O {outputType}`	Define kind of result.  
 `PROTO`, `STATUS` or `STATUS_CODE`, `HEADER`, `BODY`(default), `FULL`    
 `-O PROTO|STATUS|HEADER|BODY` same this `-O FULL`.
 
@@ -107,23 +107,71 @@ SELECT http_get('http://example.com', '-O FULL');
 **Return**
 ```javascript
 {
-    "Proto": String(Http Version, HTTP/1.0, HTTP/1.1, HTTP/2.0),
-    "Status": String(Status Code, 200 OK, 404 NOT FOUND),
-    "Header": JSON(`{Key : Array, ...}`),
-    "Body": String(HTML(Default), Base64, Hexdecimal)
+    "Proto"  : String(Http Version, HTTP/1.0, HTTP/1.1, HTTP/2.0),
+    "Status" : String(Status Code, 200 OK, 404 NOT FOUND...),
+    "Header" : JSON(`{Key : Array, ...}`),
+    "Body"   : String(HTML(Default), Base64, Hexdecimal)
 }
 ```
-#
-#
-#
-#
-### writing...  plz wait...
-### Add Soon
-### - POST Method
+- **Custom Header**  
+Option param input  `-H {key}:{value}`.  
 ```sql
-SELECT http_post();
+SELECT http_get('http://example.com', '-O FULL', '-H CustomKey:CustomValue', '-H Authorization:Bearer a1b2c3d4-123e-5678-9fgh-ijk098765432')
 ```
-  
+**Like this**
+```http
+GET / HTTP/1.1
+Host: example.com
+CustomKey: CustomValue
+Authorization: Bearer a1b2c3d4-123e-5678-9fgh-ijk098765432
+User-Agent: Go-http-client/1.1
+Accept-Encoding: gzip
+```
+
+### - POST Method
+- **Prototype**
+```sql
+SELECT http_post(url, contentType, body, options...)
+```
+- **Simple Request(No Body)**
+```sql
+SELECT http_post('http://example.com', '', '');
+```
+- **Simple Request(Json Body)**
+```sql
+SELECT http_post('http://example.com', 'application/json', '{"Hello":"World"}');
+```
+**Like this**
+```http
+POST / HTTP/1.1
+Host: example.com
+Content-Type: application/json
+Content-Length: 17
+User-Agent: Go-http-client/1.1
+Accept-Encoding: gzip
+
+
+{"Hello":"World"}
+```
+### - Raw Method
+- **Prototype**
+```sql
+SELECT http_raw(method, url, body, options...)
+```
+
+- **PUT**
+```sql
+SELECT http_raw('PUT', url, body, options...)
+```
+- **PATCH**
+```sql
+SELECT http_raw('PATCH', url, body, options...)
+```
+- **DELETE**
+```sql
+SELECT http_raw('DELETE', url, body, options...)
+```
+
 License
 ---
 [`THE BEER-WARE LICENSE (Revision 42)`](http://en.wikipedia.org/wiki/Beerware)
