@@ -97,9 +97,6 @@ SELECT http_get('http://example.com');
 ```
 
 - **Output Option**  
-`-O {outputType}`	Define kind of result.  
-`PROTO`, `STATUS` or `STATUS_CODE`, `HEADER`, `BODY`(default), `FULL`    
-`-O PROTO|STATUS|HEADER|BODY` same this `-O FULL`.
 
 ```sql
 SELECT http_get('http://example.com', '-O FULL');
@@ -113,8 +110,13 @@ SELECT http_get('http://example.com', '-O FULL');
     "Body"   : String(HTML(Default), Base64, Hexdecimal)
 }
 ```
+`-O {outputType}`	Define kind of result.  
+`PROTO`, `STATUS` or `STATUS_CODE`, `HEADER`, `BODY`(default), `FULL`    
+`-O PROTO|STATUS|HEADER|BODY` same this `-O FULL`.
+
+
 - **Custom Header**  
-Option param input  `-H {key}:{value}`.  
+
 ```sql
 SELECT http_get('http://example.com', '-O FULL', '-H CustomKey:CustomValue', '-H Authorization:Bearer a1b2c3d4-123e-5678-9fgh-ijk098765432')
 ```
@@ -127,6 +129,8 @@ Authorization: Bearer a1b2c3d4-123e-5678-9fgh-ijk098765432
 User-Agent: Go-http-client/1.1
 Accept-Encoding: gzip
 ```
+
+Option param input  `-H {key}:{value}`.  
 
 ### - POST Method
 - **Prototype**
