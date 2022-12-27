@@ -254,13 +254,18 @@ func http_get(initid *C.UDF_INIT, args *C.UDF_ARGS, result *C.char, length *uint
 	null_value *C.char, message *C.char) *C.char {
 	gArg_count := uint(args.arg_count)
 
+	// Create a new HTTP client with a timeout of 30 seconds
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
 	var ret string
 	var err error
 	if gArg_count == 1 {
-		ret, err = httpRaw("GET", C.GoString(*args.args), "", "", nil)
+		ret, err = httpRaw("GET", C.GoString(*args.args), "", "", nil, client)
 	} else {
 		gArgs := ((*[arrLength]*C.char)(unsafe.Pointer(args.args)))[:gArg_count:gArg_count]
-		ret, err = httpRaw("GET", C.GoString(*args.args), "", "", gArgs[1:])
+		ret, err = httpRaw("GET", C.GoString(*args.args), "", "", gArgs[1:], client)
 	}
 
 	if err != nil {
@@ -271,6 +276,7 @@ func http_get(initid *C.UDF_INIT, args *C.UDF_ARGS, result *C.char, length *uint
 	*length = uint64(utf8.RuneCountInString(ret))
 	return result
 }
+
 
 //export http_post_init
 func http_post_init(initid *C.UDF_INIT, args *C.UDF_ARGS, message *C.char) C.my_bool {
