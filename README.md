@@ -1,4 +1,6 @@
 # mysql_udf_http_golang
+Now works for Mysql 8+ also.
+
 [![MySQL UDF](https://img.shields.io/badge/MySQL-UDF-blue.svg)](https://dev.mysql.com/) [![MariaDB UDF](https://img.shields.io/badge/MariaDB-UDF-blue.svg)](https://mariadb.com/)
 
 [MySQL](https://dev.mysql.com/) or [MariaDB](https://mariadb.com/) UDF(User-Defined Functions) HTTP Client Plugin
@@ -9,7 +11,7 @@ Setup
 ---
 - **Clone Source**
 ```shell
-git clone https://github.com/2rebi/mysql_udf_http_golang.git udf
+git clone https://github.com/parthasai/mysql_udf_http_golang.git udf
 cd udf
 ```
 
