@@ -11,7 +11,7 @@ Setup
 ---
 - **Clone Source**
 ```shell
-sudo apt install libmysqlclient-dev
+sudo apt install libmysqlclient-dev golang-go
 git clone https://github.com/parthasai/mysql_udf_http_golang.git udf
 cd udf
 ```
