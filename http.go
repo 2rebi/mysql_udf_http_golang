@@ -21,6 +21,7 @@ import (
 	"strings"
 	"unicode/utf8"
 	"unsafe"
+	"time"
 )
 
 type respResult struct {
@@ -101,233 +102,141 @@ func httpRaw(method string, url string, contentType string, body string, options
 			}
 			rBody = bytes.NewReader(hexDatas)
 		}
-	} else {
-		rBody = nil
 	}
 
 	req, err := http.NewRequest(method, url, rBody)
 	if err != nil {
 		return "", err
 	}
-	req.Header = reqHeader
 
-	if rBody != nil && len(contentType) != 0 {
-		req.Header.Set("Content-Type", contentType)
+	if len(contentType) > 0 {
+		req.Header.Add("Content-Type", contentType)
 	}
 
-	client := &http.Client{}
-	if sslSkip {
-		client.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
+	for k, v := range reqHeader {
+		for _, vv := range v {
+			req.Header.Add(k, vv)
 		}
 	}
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: sslSkip},
+	}
+	client := &http.Client{Transport: tr, Timeout: 5 * time.Second}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
-	bytesBody, err := ioutil.ReadAll(resp.Body)
+
+	respResult := respResult{
+		Proto:      resp.Proto,
+		Status:     resp.Status,
+		StatusCode: resp.StatusCode,
+		Header:     resp.Header,
+	}
+	switch outputOption {
+	case "PROTO":
+		return respResult.Proto, nil
+	case "STATUS":
+		return respResult.Status, nil
+	case "STATUS_CODE":
+		return fmt.Sprintf("%d", respResult.StatusCode), nil
+	case "HEADER":
+		headers, err := json.Marshal(respResult.Header)
+		if err != nil {
+			return "", err
+		}
+		return string(headers), nil
+	}
+
+	// outputOption == "BODY" || outputOption == "FULL"
+	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
-
-	var ret respResult
-	outputOptions := strings.Split(outputOption, "|")
-	outputLen := len(outputOptions)
-	if outputLen == 0 {
-		return "", errors.New("Invalid Output Option, Zero Option")
-	} else {
-		invalidOption := true
-		if outputLen == 1 && outputOptions[0] == "FULL" {
-			invalidOption = false
-			outputOptions = []string{"PROTO", "STATUS", "HEADER", "BODY"}
-			outputLen = 4
-		}
-
-		if contains(outputOptions, "PROTO") {
-			invalidOption = false
-			ret.Proto = resp.Proto
-		}
-		if contains(outputOptions, "STATUS") {
-			invalidOption = false
-			ret.Status = resp.Status
-		} else if contains(outputOptions, "STATUS_CODE") {
-			invalidOption = false
-			ret.StatusCode = resp.StatusCode
-		}
-		if contains(outputOptions, "HEADER") {
-			invalidOption = false
-			ret.Header = resp.Header
-		}
-		if contains(outputOptions, "BODY") {
-			invalidOption = false
-			switch bodyOption {
-			case "txt":
-				ret.Body = string(bytesBody)
-			case "b64":
-				ret.Body = base64.StdEncoding.EncodeToString(bytesBody)
-			case "hex":
-				ret.Body = hex.EncodeToString(bytesBody)
-			default:
-				return "", errors.New("Invalid Body Option")
-			}
-		}
-
-		if invalidOption {
-			return "", errors.New("Invalid Output Option, " + fmt.Sprintf("(%v)", outputOptions))
-		}
+	respResult.Body = string(b)
+	switch bodyOption {
+	case "txt":
+		break
+	case "b64":
+		b64Body := base64.StdEncoding.EncodeToString([]byte(respResult.Body))
+		respResult.Body = b64Body
+	case "hex":
+		hexBody := hex.EncodeToString([]byte(respResult.Body))
+		respResult.Body = hexBody
 	}
 
-	jBuffer := &bytes.Buffer{}
-	encoder := json.NewEncoder(jBuffer)
-	encoder.SetEscapeHTML(false)
-	err = encoder.Encode(ret)
+	if outputOption == "FULL" {
+		fullResult, err := json.Marshal(respResult)
+		if err != nil {
+			return "", err
+		}
+		return string(fullResult), nil
+	}
+
+	return respResult.Body, nil
+}
+
+func httpGet(url string, options []*C.char) (string, error) {
+	return httpRaw("GET", url, "", "", options)
+}
+
+func httpPost(url string, contentType string, body string, options []*C.char) (string, error) {
+	return httpRaw("POST", url, contentType, body, options)
+}
+
+func httpPut(url string, contentType string, body string, options []*C.char) (string, error) {
+	return httpRaw("PUT", url, contentType, body, options)
+}
+
+func httpDelete(url string, options []*C.char) (string, error) {
+	return httpRaw("DELETE", url, "", "", options)
+}
+
+//export HttpGet
+func HttpGet(url *C.char, options []*C.char) *C.char {
+	ret, err := httpGet(C.GoString(url), options)
 	if err != nil {
-		return "", err
+		return C.CString(fmt.Sprintf("error:%v", err))
 	}
-
-	return string(jBuffer.Bytes()), nil
+	return C.CString(ret)
 }
 
-//export http_raw_init
-func http_raw_init(initid *C.UDF_INIT, args *C.UDF_ARGS, message *C.char) C.my_bool {
-	if args.arg_count < 3 {
-		msg := `
-		http_raw(method string, url string, body string, option ...string) requires method, url, body argment
-		` + optionDescription
-		C.strcpy(message, C.CString(msg))
-		return 1
-	}
-	return 0
-}
-
-//export http_raw
-func http_raw(initid *C.UDF_INIT, args *C.UDF_ARGS, result *C.char, length *uint64,
-	null_value *C.char, message *C.char) *C.char {
-	gArg_count := uint(args.arg_count)
-
-	var ret string
-	var err error
-	gArgs := ((*[arrLength]*C.char)(unsafe.Pointer(args.args)))[:gArg_count:gArg_count]
-	method := C.GoString(*args.args)
-	switch method {
-	case "GET":
-		if gArg_count == 3 {
-			ret, err = httpRaw(method, C.GoString(gArgs[1]), "", "", nil)
-		} else {
-			ret, err = httpRaw(method, C.GoString(gArgs[1]), "", "", gArgs[3:])
-		}
-	default:
-		if gArg_count == 3 {
-			ret, err = httpRaw(method, C.GoString(gArgs[1]), "", C.GoString(gArgs[2]), nil)
-		} else {
-			ret, err = httpRaw(method, C.GoString(gArgs[1]), "", C.GoString(gArgs[2]), gArgs[3:])
-		}
-	}
-
+//export HttpPost
+func HttpPost(url *C.char, contentType *C.char, body *C.char, options []*C.char) *C.char {
+	ret, err := httpPost(C.GoString(url), C.GoString(contentType), C.GoString(body), options)
 	if err != nil {
-		ret = err.Error()
+		return C.CString(fmt.Sprintf("error:%v", err))
 	}
-
-	result = C.CString(ret)
-	*length = uint64(utf8.RuneCountInString(ret))
-	return result
+	return C.CString(ret)
 }
 
-//export http_get_init
-func http_get_init(initid *C.UDF_INIT, args *C.UDF_ARGS, message *C.char) C.my_bool {
-	if args.arg_count == 0 {
-		msg := `
-		http_get(url string, option ...string) requires url argment
-		` + optionDescription
-		C.strcpy(message, C.CString(msg))
-		return 1
-	}
-
-	return 0
-}
-
-//export http_get
-func http_get(initid *C.UDF_INIT, args *C.UDF_ARGS, result *C.char, length *uint64,
-	null_value *C.char, message *C.char) *C.char {
-	gArg_count := uint(args.arg_count)
-
-	var ret string
-	var err error
-	if gArg_count == 1 {
-		ret, err = httpRaw("GET", C.GoString(*args.args), "", "", nil)
-	} else {
-		gArgs := ((*[arrLength]*C.char)(unsafe.Pointer(args.args)))[:gArg_count:gArg_count]
-		ret, err = httpRaw("GET", C.GoString(*args.args), "", "", gArgs[1:])
-	}
-
+//export HttpPut
+func HttpPut(url *C.char, contentType *C.char, body *C.char, options []*C.char) *C.char {
+	ret, err := httpPut(C.GoString(url), C.GoString(contentType), C.GoString(body), options)
 	if err != nil {
-		ret = err.Error()
+		return C.CString(fmt.Sprintf("error:%v", err))
 	}
-
-	result = C.CString(ret)
-	*length = uint64(utf8.RuneCountInString(ret))
-	return result
+	return C.CString(ret)
 }
 
-//export http_post_init
-func http_post_init(initid *C.UDF_INIT, args *C.UDF_ARGS, message *C.char) C.my_bool {
-	if args.arg_count < 3 {
-		msg := `
-		http_post(url string, contentType string, body string, option ...string) requires url, contentType, body argment
-		` + optionDescription
-		C.strcpy(message, C.CString(msg))
-		return 1
-	}
-	return 0
-}
-
-//export http_post
-func http_post(initid *C.UDF_INIT, args *C.UDF_ARGS, result *C.char, length *uint64,
-	null_value *C.char, message *C.char) *C.char {
-	gArg_count := uint(args.arg_count)
-
-	var ret string
-	var err error
-	gArgs := ((*[arrLength]*C.char)(unsafe.Pointer(args.args)))[:gArg_count:gArg_count]
-	if gArg_count == 3 {
-		ret, err = httpRaw("POST", C.GoString(*args.args), C.GoString(gArgs[1]), C.GoString(gArgs[2]), nil)
-	} else {
-		ret, err = httpRaw("POST", C.GoString(*args.args), C.GoString(gArgs[1]), C.GoString(gArgs[2]), gArgs[3:])
-	}
-
+//export HttpDelete
+func HttpDelete(url *C.char, options []*C.char) *C.char {
+	ret, err := httpDelete(C.GoString(url), options)
 	if err != nil {
-		ret = err.Error()
+		return C.CString(fmt.Sprintf("error:%v", err))
 	}
-
-	result = C.CString(ret)
-	*length = uint64(utf8.RuneCountInString(ret))
-	return result
+	return C.CString(ret)
 }
 
-//export http_help_init
-func http_help_init(initid *C.UDF_INIT, args *C.UDF_ARGS, message *C.char) C.my_bool {
-	return 0
-}
-
-//export http_help
-func http_help(initid *C.UDF_INIT, args *C.UDF_ARGS, result *C.char, length *uint64,
-	null_value *C.char, message *C.char) *C.char {
-
-	msg := `
-	Method List.
-	http_raw(method string, url string, body string, option ...string) requires method, url, body argment
-	http_get(url string, option ...string) requires url argment
-	http_post(url string, contentType string, body string, option ...string) requires url, contentType, body argment
-
-	` + optionDescription
-
-	result = C.CString(msg)
-	*length = uint64(utf8.RuneCountInString(msg))
-	return result
+//export OptionDescription
+func OptionDescription() *C.char {
+	return C.CString(optionDescription)
 }
 
 func main() {
 }
+
+
