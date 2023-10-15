@@ -3,8 +3,6 @@
 
 [MySQL](https://dev.mysql.com/) or [MariaDB](https://mariadb.com/) UDF(User-Defined Functions) HTTP Client Plugin
 
-Call RESTful API on query.
-
 Setup 
 ---
 - **Clone Source**
